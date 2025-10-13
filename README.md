@@ -1,5 +1,5 @@
 <h1 align="center">agentsmd</h1>
-<p align="center">Maintain local agent instructions on top of your repository’s <code>AGENTS.md</code>.</p>
+<p align="center">Templates and preferences for your <code>AGENTS.md</code> instructions.</p>
 
 <p align="center">
 <code>npm install -g @adiasg/agentsmd</code> · <code>npx @adiasg/agentsmd &lt;command&gt;</code>
@@ -7,13 +7,13 @@
 
 ---
 
-> **agentsmd** layers your local `.agentsmd` preferences and templates onto `AGENTS.md` while keeping the tracked source clean.
+> **agentsmd** adds templating and local `.agentsmd` preferences to `AGENTS.md` while keeping the tracked source clean.
 
 ## Features
 
 * 🧾 **Personal Overlays** – `agentsmd make` rebuilds `AGENTS.md` by appending your `.agentsmd` preferences & templates onto the committed snapshot.
 * 🔄 **Automate the Refresh** – `agentsmd enable` hooks Git so `AGENTS.md` regenerates on pulls/checkouts and silently ignores your local rendered copy; `agentsmd disable` rolls back the Git hooks.
-* 🧩 **Reusable Templates** – Place `{{ name }}` tokens to pull snippets from `~/.agentsmd/templates/<name>[.md]`, sharing guidance across projects.
+* 🧩 **Reusable Templates** – Place `{{ name }}` tokens in `AGENTS.md` or `.agentsmd` to pull snippets from `~/.agentsmd/templates/<name>[.md]`, sharing guidance across projects.
 * 🧰 **Local Install Only** – Everything the CLI writes stays in your working tree — no global state or remote services required.
 
 ---
@@ -23,16 +23,17 @@
 # 1. Install
 npm install -g @adiasg/agentsmd
 
-# 2. Place your personal overlay (kept local)
-echo "Never run npm run dev" > .agentsmd
-
-# 3. Append .agentsmd to AGENTS.md
-agentsmd make
-
-# 4. (Optional) Drop reusable snippets into your home library
+# 2. Drop reusable templates into your home library
 mkdir -p ~/.agentsmd/templates
-# Refer to this template in .agentsmd with {{ nextjs }}
-echo "Do not launch npm run dev automatically." >> ~/.agentsmd/templates/nextjs.md
+echo "Never run `npm run dev` yourself." >> ~/.agentsmd/templates/nextjs.md
+# Refer to this template in AGENTS.md or .agentsmd with {{ nextjs }}
+echo "{{ nextjs }}" >> AGENTS.md
+
+# 3. Place your personal overlay (kept local)
+echo "Never run `npm run dev` yourself." > .agentsmd
+
+# 4. Render templates and append .agentsmd to AGENTS.md
+agentsmd make
 
 # 5. (Optional) Git automation for regeneration & ignoring file
 agentsmd enable

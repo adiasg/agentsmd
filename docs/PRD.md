@@ -24,6 +24,7 @@
 
 ### `agentsmd disable`
 - Removes all automation introduced by `enable` and restores the original state of the Git configuration.
+- Restore `AGENTS.md` to the canonical tracked state.
 - Safe when run without prior `agentsmd enable`.
 
 ### `agentsmd status`

@@ -166,11 +166,22 @@ cleanup_index_flags() {
   fi
 }
 
+restore_canonical_agents_md() {
+  # If AGENTS.md is tracked at HEAD, restore working tree file to canonical tracked content
+  if git rev-parse -q --verify HEAD > /dev/null 2>&1; then
+    if git cat-file -e "HEAD:${AGENTS_MD_FILE}" 2> /dev/null; then
+      git show "HEAD:${AGENTS_MD_FILE}" > "${AGENTS_MD_FILE}" 2> /dev/null || true
+      log "Restored ${AGENTS_MD_FILE} to canonical tracked state."
+    fi
+  fi
+}
+
 cleanup_hooks
 cleanup_attributes
 cleanup_merge_driver_config
 cleanup_aliases
 cleanup_index_flags
+restore_canonical_agents_md
 
 if [ -d "$STATE_DIR" ]; then
   rmdir "$STATE_DIR" 2> /dev/null || true

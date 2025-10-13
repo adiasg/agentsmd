@@ -231,10 +231,10 @@ agentsmd_cmd_make() {
       # Ensure final file ends with a single trailing newline
       agentsmd_make_normalize_single_trailing_newline "$tmp"
     else
-      agentsmd_log "NOTICE: .agentsmd is empty; skipping preferences block."
+      agentsmd_log "NOTICE: .agentsmd is empty; skipping local preferences block."
     fi
   else
-    agentsmd_log "NOTICE: .agentsmd not found; preferences block skipped."
+    agentsmd_log "NOTICE: .agentsmd not found; skipping local preferences block."
   fi
 
   if ! mv "$tmp" "$target"; then
