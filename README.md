@@ -25,12 +25,12 @@ npm install -g @adiasg/agentsmd
 
 # 2. Drop reusable templates into your home library
 mkdir -p ~/.agentsmd/templates
-echo "Never run `npm run dev` yourself." >> ~/.agentsmd/templates/nextjs.md
+echo "Never run npm run dev yourself." > ~/.agentsmd/templates/nextjs.md
 # Refer to this template in AGENTS.md or .agentsmd with {{ nextjs }}
-echo "{{ nextjs }}" >> AGENTS.md
+echo "{{ nextjs }}" > .agentsmd
 
 # 3. Place your personal overlay (kept local)
-echo "Never run `npm run dev` yourself." > .agentsmd
+echo "Don't hardcode constants - instead place them in a constants.ts file." >> .agentsmd
 
 # 4. Render templates and append .agentsmd to AGENTS.md
 agentsmd make
