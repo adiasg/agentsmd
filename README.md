@@ -11,9 +11,9 @@
 
 ## Features
 
-* 🧾 **Personal Overlays** – `agentsmd make` rebuilds `AGENTS.md` by appending your `.agentsmd` preferences & templates onto the committed snapshot.
-* 🔄 **Automate the Refresh** – `agentsmd enable` hooks Git so `AGENTS.md` regenerates on pulls/checkouts and silently ignores your local rendered copy; `agentsmd disable` rolls back the Git hooks.
+* 🧾 **Extend AGENTS.md** – `agentsmd make` regenerates `AGENTS.md` with templates and appends local `.agentsmd` preferences onto the committed snapshot.
 * 🧩 **Reusable Templates** – Place `{{ name }}` tokens in `AGENTS.md` or `.agentsmd` to pull snippets from `~/.agentsmd/templates/<name>[.md]`, sharing guidance across projects.
+* 🔄 **Automate the Refresh** – `agentsmd enable` hooks Git so `AGENTS.md` regenerates on pulls/checkouts and silently ignores your local rendered copy; `agentsmd disable` rolls back the Git hooks.
 * 🧰 **Local Install Only** – Everything the CLI writes stays in your working tree — no global state or remote services required.
 
 ---
