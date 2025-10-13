@@ -6,7 +6,9 @@ ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT_DIR"
 
 if command -v bats > /dev/null 2>&1; then
-  bats tests/specs
+  # Run specs recursively and in parallel across files
+  JOBS=$(command -v nproc > /dev/null 2>&1 && nproc || echo 2)
+  bats -r -j "$JOBS" tests/specs
 else
   echo "[test] Bats not installed; skipping shell tests." >&2
 fi

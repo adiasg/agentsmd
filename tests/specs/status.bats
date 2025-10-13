@@ -1,19 +1,13 @@
 #!/usr/bin/env bats
 
 setup() {
-  PROJECT_ROOT=$(cd "$BATS_TEST_DIRNAME/../.." && pwd)
-  CLI="$PROJECT_ROOT/bin/agentsmd"
-  REPO_DIR=$(mktemp -d)
-  export PROJECT_ROOT CLI REPO_DIR
-  git -C "$REPO_DIR" init -q
-  git -C "$REPO_DIR" config user.name "Test User"
-  git -C "$REPO_DIR" config user.email "test@example.com"
-  cd "$REPO_DIR"
+  # shellcheck source=/dev/null
+  . "$BATS_TEST_DIRNAME/../helpers/common.bash"
+  setup_repo
 }
 
 teardown() {
-  cd "$BATS_TEST_DIRNAME"
-  rm -rf "$REPO_DIR"
+  teardown_repo
 }
 
 @test "status reports disabled by default" {

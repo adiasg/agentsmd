@@ -98,18 +98,32 @@ cleanup_attributes() {
     else
       rm -f "$tmp_attr"
     fi
+    # If attributes file is now empty, remove it to restore pre-enable state
+    if [ -f "$ATTRIBUTES_FILE" ] && [ ! -s "$ATTRIBUTES_FILE" ]; then
+      rm -f "$ATTRIBUTES_FILE"
+    fi
   fi
 }
 
 cleanup_merge_driver_config() {
   local owner_marker="merge.${MERGE_DRIVER_NAME}.owned"
+  local name_backup
+  name_backup=$(state_path "merge.${MERGE_DRIVER_NAME}.name.backup")
+  local driver_backup
+  driver_backup=$(state_path "merge.${MERGE_DRIVER_NAME}.driver.backup")
+
+  # If we neither own these settings nor have backups, leave user config untouched
+  if [ ! -f "$name_backup" ] && [ ! -f "$driver_backup" ] && [ ! -f "$(state_path "$owner_marker")" ]; then
+    return
+  fi
+
   local restored=0
 
-  if restore_config_key "merge.${MERGE_DRIVER_NAME}.name" "$(state_path "merge.${MERGE_DRIVER_NAME}.name.backup")"; then
+  if restore_config_key "merge.${MERGE_DRIVER_NAME}.name" "$name_backup"; then
     restored=1
   fi
 
-  if restore_config_key "merge.${MERGE_DRIVER_NAME}.driver" "$(state_path "merge.${MERGE_DRIVER_NAME}.driver.backup")"; then
+  if restore_config_key "merge.${MERGE_DRIVER_NAME}.driver" "$driver_backup"; then
     restored=1
   fi
 
@@ -125,6 +139,11 @@ cleanup_aliases() {
   backup_file=$(state_path "alias.rebuild-agents.backup")
   local owner_marker="alias.rebuild-agents.owned"
 
+  # If we neither own the alias nor have a backup, leave user alias untouched
+  if [ ! -f "$backup_file" ] && [ ! -f "$(state_path "$owner_marker")" ]; then
+    return
+  fi
+
   if [ -f "$backup_file" ]; then
     local value
     value=$(cat "$backup_file")
@@ -133,6 +152,7 @@ cleanup_aliases() {
     git config --local alias.rebuild-agents "$value" 2> /dev/null || true
     log "Restored alias.rebuild-agents from backup."
   else
+    # Only remove if we owned it
     git config --local --unset alias.rebuild-agents 2> /dev/null || true
     git config --local --unset-all alias.rebuild-agents 2> /dev/null || true
   fi
@@ -156,5 +176,5 @@ if [ -d "$STATE_DIR" ]; then
   rmdir "$STATE_DIR" 2> /dev/null || true
 fi
 
-log "Git automation disabled. Manual AGENTS.md commits are now unmanaged."
+log "Removed all installed agentsmd Git automation."
 exit 0

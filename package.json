@@ -1,6 +1,6 @@
 {
   "name": "@adiasg/agentsmd",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "CLI helpers for managing AGENTS.md workflows and Git automation.",
   "license": "MIT",
   "bin": {
@@ -11,15 +11,13 @@
     "lib/",
     "share/",
     "docs/",
-    "VERSION",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "lint": "scripts/lint.sh",
     "test": "scripts/test.sh",
-    "prepare": "npm run lint",
-    "version": "scripts/sync-version.sh"
+    "prepare": "npm run lint"
   },
   "publishConfig": {
     "access": "public"

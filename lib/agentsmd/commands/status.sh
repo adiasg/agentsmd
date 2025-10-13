@@ -5,8 +5,7 @@ agentsmd_cmd_status_usage() {
   cat << 'HELP'
 Usage: agentsmd status
 
-Reports whether agentsmd Git automation is fully enabled in the current
-repository and where developer preferences are sourced from when enabled.
+Reports agentsmd system status.
 
 Options:
   -h, --help    Show this help message.

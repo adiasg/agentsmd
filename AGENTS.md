@@ -11,3 +11,10 @@ Additional context is provided in the [README](README.md) and the [PRD](docs/PRD
 - `docs/` – product specs and long-form documentation.
 - `scripts/` – contributor utilities (`lint`, `test`, release helpers).
 - `tests/` – shell-based test suites.
+
+### .agentsmd
+
+### Developer Preferences
+
+- Use orange hues for the accent colors.
+{{ nextjs }}

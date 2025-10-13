@@ -5,18 +5,11 @@ agentsmd_cmd_make_usage() {
   cat << 'HELP'
 Usage: agentsmd make [options]
 
-Regenerates the repository root AGENTS.md by appending developer preferences
-from the root-level .agentsmd file.
+Regenerates AGENTS.md at the repository root with templates and preferences
+from the .agentsmd file.
 
 Options:
   -h, --help    Show this help message.
-
-Behavior:
-  * Must be run from within a Git repository.
-  * Preserves existing AGENTS.md content (above the injected block).
-  * Appends the raw contents of .agentsmd when that file contains
-    non-whitespace text.
-  * Skips the append entirely if .agentsmd is missing or empty.
 HELP
 }
 
@@ -92,6 +85,23 @@ agentsmd_make_ensure_trailing_newline() {
   fi
 }
 
+agentsmd_make_normalize_single_trailing_newline() {
+  local file="$1"
+  # Normalize file to end with exactly one trailing newline (collapse many to one)
+  if [ ! -f "$file" ]; then
+    return
+  fi
+  local python_bin="python3"
+  if ! command -v "$python_bin" > /dev/null 2>&1; then
+    if command -v python > /dev/null 2>&1 && python -c 'import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)' > /dev/null 2>&1; then
+      python_bin="python"
+    else
+      agentsmd_die "Normalization requires Python 3 (python3 or python)."
+    fi
+  fi
+  "$python_bin" "$AGENTSMD_SHARE_DIR/python/normalize_trailing_newline.py" "$file" || exit 1
+}
+
 agentsmd_make_render_templates() {
   local source="$1"
   local dest="$2"
@@ -108,69 +118,9 @@ agentsmd_make_render_templates() {
     fi
   fi
 
+  local script_path="$AGENTSMD_SHARE_DIR/python/render_templates.py"
   python_output=$(
-    $python_bin - "$source" "$dest" "$repo_root" "$home_dir" << 'PY'
-import os
-import sys
-import re
-
-source, dest, repo_root, home_dir = sys.argv[1:5]
-with open(source, 'r', encoding='utf-8') as handle:
-    content = handle.read()
-
-pattern = re.compile(r"{{\s*([A-Za-z0-9._-]+)\s*}}")
-cache = {}
-warnings = []
-
-
-def resolve(name):
-    if name in cache:
-        return cache[name]
-
-    candidates = []
-
-    if home_dir:
-        templates_dir = os.path.join(home_dir, '.agentsmd', 'templates')
-        candidates.extend([
-            os.path.join(templates_dir, name),
-            os.path.join(templates_dir, f"{name}.md"),
-        ])
-
-    for path in candidates:
-        if os.path.isfile(path):
-            with open(path, 'r', encoding='utf-8') as tmpl:
-                cache[name] = tmpl.read()
-                return cache[name]
-
-    cache[name] = None
-    return None
-
-
-def substitute(match):
-    name = match.group(1)
-    resolved = resolve(name)
-    if resolved is None:
-        warnings.append(f"missing {name}")
-        return match.group(0)
-    if resolved.endswith("\n"):
-        next_index = match.end()
-        if next_index < len(content) and content[next_index] == "\n":
-            resolved = resolved[:-1]
-    return resolved
-
-
-rendered = pattern.sub(substitute, content)
-
-with open(dest, 'w', encoding='utf-8') as handle:
-    handle.write(rendered)
-
-
-seen = set()
-for message in warnings:
-    if message not in seen:
-        print(message)
-        seen.add(message)
-PY
+    $python_bin "$script_path" "$source" "$dest" "$repo_root" "$home_dir"
   ) || agentsmd_die "Unable to render templates in $source"
 
   if [ -n "$python_output" ]; then
@@ -210,9 +160,6 @@ agentsmd_cmd_make() {
       agentsmd_cmd_make_usage
       return 0
       ;;
-    --dry-run)
-      agentsmd_die "--dry-run is not supported yet."
-      ;;
   esac
 
   local repo_root
@@ -222,7 +169,7 @@ agentsmd_cmd_make() {
 
   local target="$repo_root/AGENTS.md"
   local source="$repo_root/.agentsmd"
-  local tmp base_tmp render_tmp
+  local tmp base_tmp render_tmp base_render_tmp
   tmp=$(mktemp "$target.XXXXXX") || agentsmd_die "Unable to create temporary file for $target"
   base_tmp=$(mktemp "$target.base.XXXXXX") || {
     rm -f "$tmp"
@@ -232,7 +179,10 @@ agentsmd_cmd_make() {
     rm -f "$tmp" "$base_tmp"
     agentsmd_die "Unable to prepare rendered preferences for $target"
   }
-  local appended=0
+  base_render_tmp=$(mktemp "$target.base.render.XXXXXX") || {
+    rm -f "$tmp" "$base_tmp" "$render_tmp"
+    agentsmd_die "Unable to prepare rendered base content for $target"
+  }
 
   cleanup_make_tmp() {
     rm -f "$tmp" "$base_tmp" "$render_tmp"
@@ -245,6 +195,8 @@ agentsmd_cmd_make() {
     have_source=1
     agentsmd_make_render_templates "$source" "$render_tmp" "$repo_root"
     rendered_source="$render_tmp"
+    # Ensure preferences end with exactly one trailing newline
+    agentsmd_make_normalize_single_trailing_newline "$rendered_source"
   fi
 
   local relative_target="AGENTS.md"
@@ -263,14 +215,21 @@ agentsmd_cmd_make() {
   fi
   rm -f "$base_tmp"
 
+  # Render templates present in the base content
+  agentsmd_make_render_templates "$tmp" "$base_render_tmp" "$repo_root"
+  mv "$base_render_tmp" "$tmp"
+
   if [ "$have_source" -eq 1 ]; then
     if grep -q '[^[:space:]]' "$rendered_source"; then
-      appended=1
       if [ -s "$tmp" ]; then
+        # Normalize base to exactly one trailing newline, then add a blank line
+        agentsmd_make_normalize_single_trailing_newline "$tmp"
         printf '\n' >> "$tmp"
       fi
+      # Append preferences (already normalized to a single trailing newline)
       cat "$rendered_source" >> "$tmp"
-      agentsmd_make_ensure_trailing_newline "$tmp"
+      # Ensure final file ends with a single trailing newline
+      agentsmd_make_normalize_single_trailing_newline "$tmp"
     else
       agentsmd_log "NOTICE: .agentsmd is empty; skipping preferences block."
     fi
@@ -284,11 +243,7 @@ agentsmd_cmd_make() {
   trap - EXIT
   cleanup_make_tmp
 
-  if [ "$appended" -eq 1 ]; then
-    agentsmd_log "Updated $target with developer preferences."
-  else
-    agentsmd_log "Updated $target (no preferences appended)."
-  fi
+  agentsmd_log "Generated $target file."
 }
 
 agentsmd_register_command "make" "agentsmd_cmd_make" "Regenerate AGENTS.md with .agentsmd preferences"

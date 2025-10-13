@@ -1,9 +1,13 @@
 #!/usr/bin/env bats
 
 setup() {
-  PROJECT_ROOT=$(cd "$BATS_TEST_DIRNAME/../.." && pwd)
-  CLI="$PROJECT_ROOT/bin/agentsmd"
-  export PROJECT_ROOT CLI
+  # shellcheck source=/dev/null
+  . "$BATS_TEST_DIRNAME/../helpers/common.bash"
+  setup_repo
+}
+
+teardown() {
+  teardown_repo
 }
 
 @test "--version prints package version" {

@@ -1,22 +1,13 @@
 #!/usr/bin/env bats
 
 setup() {
-  PROJECT_ROOT=$(cd "$BATS_TEST_DIRNAME/../.." && pwd)
-  CLI="$PROJECT_ROOT/bin/agentsmd"
-  REPO_DIR=$(mktemp -d)
-  export PROJECT_ROOT CLI REPO_DIR
-  git -C "$REPO_DIR" init -q
-  git -C "$REPO_DIR" config user.name "Test User"
-  git -C "$REPO_DIR" config user.email "test@example.com"
-  HOME="$REPO_DIR/home"
-  mkdir -p "$HOME"
-  export HOME
-  cd "$REPO_DIR"
+  # shellcheck source=/dev/null
+  . "$BATS_TEST_DIRNAME/../helpers/common.bash"
+  setup_repo
 }
 
 teardown() {
-  cd "$BATS_TEST_DIRNAME"
-  rm -rf "$REPO_DIR"
+  teardown_repo
 }
 
 @test "creates AGENTS.md with .agentsmd contents" {
@@ -52,6 +43,7 @@ TXT
 }
 
 @test "idempotent regeneration" {
+  printf 'Base instructions\n' > AGENTS.md
   printf 'prefers spaces\n' > .agentsmd
 
   run "$CLI" make
@@ -122,9 +114,25 @@ TXT
   [ "$status" -ne 0 ]
 }
 
-@test "renders global templates" {
+@test "renders global templates in .agentsmd" {
   mkdir -p "$HOME/.agentsmd/templates"
   printf '{{ nextjs }}\n' > .agentsmd
+  printf 'Global guidance\n' > "$HOME/.agentsmd/templates/nextjs.md"
+
+  run "$CLI" make
+  [ "$status" -eq 0 ]
+
+  cat > expected <<'TXT'
+Global guidance
+TXT
+
+  cmp -s expected AGENTS.md
+  [ "$?" -eq 0 ]
+}
+
+@test "renders global templates in AGENT.md" {
+  mkdir -p "$HOME/.agentsmd/templates"
+  printf '{{ nextjs }}\n' > AGENTS.md
   printf 'Global guidance\n' > "$HOME/.agentsmd/templates/nextjs.md"
 
   run "$CLI" make
@@ -150,6 +158,108 @@ TXT
 Before
 
 {{ missing }}
+TXT
+
+  cmp -s expected AGENTS.md
+  [ "$?" -eq 0 ]
+}
+
+@test "single blank line between base and append when base has 0 trailing newlines" {
+  printf 'Base instructions' > AGENTS.md
+  printf 'Appended prefs\n' > .agentsmd
+
+  run "$CLI" make
+  [ "$status" -eq 0 ]
+
+  cat > expected <<'TXT'
+Base instructions
+
+Appended prefs
+TXT
+
+  cmp -s expected AGENTS.md
+  [ "$?" -eq 0 ]
+}
+
+@test "single blank line between base and append when base has 1 trailing newline" {
+  printf 'Base instructions\n' > AGENTS.md
+  printf 'Appended prefs\n' > .agentsmd
+
+  run "$CLI" make
+  [ "$status" -eq 0 ]
+
+  cat > expected <<'TXT'
+Base instructions
+
+Appended prefs
+TXT
+
+  cmp -s expected AGENTS.md
+  [ "$?" -eq 0 ]
+}
+
+@test "single blank line between base and append when base has 2 trailing newlines" {
+  printf 'Base instructions\n\n' > AGENTS.md
+  printf 'Appended prefs\n' > .agentsmd
+
+  run "$CLI" make
+  [ "$status" -eq 0 ]
+
+  cat > expected <<'TXT'
+Base instructions
+
+Appended prefs
+TXT
+
+  cmp -s expected AGENTS.md
+  [ "$?" -eq 0 ]
+}
+
+@test "appended content ends with single trailing newline when .agentsmd has 0 trailing newlines" {
+  printf 'Base instructions\n' > AGENTS.md
+  printf 'Appended prefs' > .agentsmd
+
+  run "$CLI" make
+  [ "$status" -eq 0 ]
+
+  cat > expected <<'TXT'
+Base instructions
+
+Appended prefs
+TXT
+
+  cmp -s expected AGENTS.md
+  [ "$?" -eq 0 ]
+}
+
+@test "appended content ends with single trailing newline when .agentsmd has 1 trailing newline" {
+  printf 'Base instructions\n' > AGENTS.md
+  printf 'Appended prefs\n' > .agentsmd
+
+  run "$CLI" make
+  [ "$status" -eq 0 ]
+
+  cat > expected <<'TXT'
+Base instructions
+
+Appended prefs
+TXT
+
+  cmp -s expected AGENTS.md
+  [ "$?" -eq 0 ]
+}
+
+@test "appended content ends with single trailing newline when .agentsmd has 2 trailing newlines" {
+  printf 'Base instructions\n' > AGENTS.md
+  printf 'Appended prefs\n\n' > .agentsmd
+
+  run "$CLI" make
+  [ "$status" -eq 0 ]
+
+  cat > expected <<'TXT'
+Base instructions
+
+Appended prefs
 TXT
 
   cmp -s expected AGENTS.md

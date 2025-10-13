@@ -54,15 +54,6 @@ agentsmd_version() {
     fi
   fi
 
-  local version_file="${AGENTSMD_ROOT}/VERSION"
-  if [ -f "$version_file" ]; then
-    AGENTSMD_VERSION=$(sed -n '1p' "$version_file")
-    if [ -n "$AGENTSMD_VERSION" ]; then
-      printf '%s\n' "$AGENTSMD_VERSION"
-      return
-    fi
-  fi
-
   AGENTSMD_VERSION='0.0.0-dev'
   printf '%s\n' "$AGENTSMD_VERSION"
 }
@@ -70,6 +61,10 @@ agentsmd_version() {
 agentsmd_usage() {
   cat << 'USAGE'
 Usage: agentsmd <command> [options]
+
+Global options:
+  -h, --help     Show this help message
+  --version      Show CLI version
 
 Commands:
 USAGE

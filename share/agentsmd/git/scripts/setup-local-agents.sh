@@ -161,8 +161,6 @@ ensure_attributes() {
   if ! grep -q "^${AGENTS_MD_FILE} merge=${MERGE_DRIVER_NAME}$" "$ATTRIBUTES_FILE"; then
     printf '%s merge=%s\n' "$AGENTS_MD_FILE" "$MERGE_DRIVER_NAME" >> "$ATTRIBUTES_FILE"
     log "Added $AGENTS_MD_FILE merge driver to .git/info/attributes."
-  else
-    log "Attributes already configured $AGENTS_MD_FILE merge driver."
   fi
 }
 
@@ -186,9 +184,7 @@ configure_aliases() {
 
 mark_assume_unchanged() {
   if git ls-files --error-unmatch "$AGENTS_MD_FILE" > /dev/null 2>&1; then
-    if git update-index --assume-unchanged "$AGENTS_MD_FILE" 2> /dev/null; then
-      log "Marked $AGENTS_MD_FILE as assume-unchanged."
-    else
+    if ! git update-index --assume-unchanged "$AGENTS_MD_FILE" 2> /dev/null; then
       log "WARNING: Unable to mark $AGENTS_MD_FILE assume-unchanged."
     fi
   else
@@ -219,10 +215,8 @@ initial_render() {
     return
   fi
 
-  if "$cmd" "${args[@]}"; then
-    log "Initial render complete via $cmd ${args[*]}"
-  else
-    log "WARNING: Initial render via $cmd ${args[*]} failed; run manually if needed."
+  if ! "$cmd" "${args[@]}"; then
+    log "WARNING: Initial render via $cmd ${args[*]} failed"
   fi
 }
 
@@ -236,16 +230,9 @@ configure_merge_driver
 configure_aliases
 mark_assume_unchanged
 initial_render
-mark_assume_unchanged
-
-relative_hooks_dir="${HOOKS_DIR#"$REPO_ROOT"/}"
-if [ "$relative_hooks_dir" = "$HOOKS_DIR" ]; then
-  display_hooks_dir="$HOOKS_DIR"
-else
-  display_hooks_dir="$relative_hooks_dir"
-fi
-
-log "Setup complete. Hooks installed under $display_hooks_dir."
-log "Use 'agentsmd make' (or 'git rebuild-agents') to regenerate on demand."
+log "Setup complete. Use:"
+log $'\t'"- 'agentsmd make' to regenerate AGENTS.md"
+log $'\t'"- 'agentsmd status' to check status."
+log $'\t'"- 'agentsmd disable' to uninstall setup."
 
 exit 0

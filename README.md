@@ -88,10 +88,10 @@ The resulting `AGENTS.md`:
 | Command | What it does |
 |---------|--------------|
 | `agentsmd make` | Rebuilds `AGENTS.md` from the last committed version plus your `.agentsmd` preferences and templates. |
-| `agentsmd enable` | Git automation for regenerating file on pull/checkout. Installs hooks, merge driver, `git rebuild-agents` alias, and marks `AGENTS.md` assume-unchanged. |
-| `agentsmd disable` | Removes all Git automation, restores backed up hooks/config. |
+| `agentsmd enable` | Enables local Git automation for regenerating file on pull/checkout. Installs hooks, merge driver, `git rebuild-agents` alias, and marks `AGENTS.md` assume-unchanged. |
+| `agentsmd disable` | Removes all installed local Git automation, restores backed up hooks/config. |
 | `agentsmd status` | Prints installation status. |
-| `agentsmd --version` | Shows the CLI version reported from the packaged `package.json`. |
+| `agentsmd --version` | Shows the version. |
 
 Run `agentsmd help <command>` for detailed usage text.
 
@@ -124,6 +124,9 @@ We welcome pull requests! Before opening one:
 
 - **"fatal: not a git repository"** – Run commands inside a clone; automation never touches directories without `.git`.
 - **`AGENTS.md` still showing in git status** – Ensure the file is tracked; otherwise `git update-index --assume-unchanged` cannot be set.
+- **HEAD missing or `AGENTS.md` untracked** – `agentsmd make` falls back to the working-tree `AGENTS.md` at the repo root before reapplying preferences.
+- **`Status: DISABLED` with missing components** – Run `agentsmd enable` to reinstall; it is safe to re-run and will restore missing pieces.
+- **Missing template referenced** – The token is left as `{{ name }}` and a warning is printed; fix files in `~/.agentsmd/templates/`.
 
 ---
 
