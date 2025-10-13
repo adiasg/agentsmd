@@ -4,7 +4,7 @@
   "description": "CLI helpers for managing AGENTS.md workflows and Git automation.",
   "license": "MIT",
   "bin": {
-    "agentsmd": "./bin/agentsmd"
+    "agentsmd": "bin/agentsmd"
   },
   "files": [
     "bin/",
@@ -33,6 +33,6 @@
   "homepage": "https://github.com/adiasg/agentsmd",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adiasg/agentsmd"
+    "url": "git+https://github.com/adiasg/agentsmd.git"
   }
 }
