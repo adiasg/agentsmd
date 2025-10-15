@@ -1,4 +1,22 @@
+# Node
 node_modules/
-
 *.tgz
+
+# Cache
+__pycache__/
+.pycache/
+*.pyc
+.venv/
+.uv-cache/
+.pytest_cache/
+.ruff_cache/
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+coverage-trace/
+coverage.json
+
+# Agent instructions
 .agentsmd

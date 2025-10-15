@@ -8,7 +8,7 @@
   },
   "files": [
     "bin/",
-    "lib/",
+    "agentsmd/",
     "share/",
     "docs/",
     "README.md",

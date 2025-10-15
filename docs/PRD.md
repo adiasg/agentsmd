@@ -45,7 +45,7 @@
 - Read developer preferences from `.agentsmd` at the repository root, and append to the base `AGENTS.md` file:
   - Missing `.agentsmd` file: warn once and skip append.
   - Empty or whitespace-only file: log notice, no append.
-  - Non-empty file: append content (respect templating as detailed below) and ensure:
+  - Non-empty file: append content and ensure:
     - a single blank line between existing content and the appended content.
     - a trailing newline at the end of the appended content.
 
@@ -54,6 +54,9 @@
   - Recognise `{{ name }}` patterns and replace them with the contents of the first template file discovered in `~/.agentsmd/templates/<name>`.
   - Attempt to load both `<name>` and `<name>.md`, preferring whichever exists first. This keeps `.md` optional while encouraging Markdown naming for editor tooling.
   - Missing templates emit a warning and leave the token untouched so developers can fix their library without losing context.
+  - Template rendering formatting guidelines:
+    - If there is prefix content, ensure a single blank line between prefix content and the template content.
+    - If there is suffix content, ensure a single blank line between template content and the suffix content. Else, ensure a trailing newline at the end of the template content.
 
 ---
 
@@ -84,15 +87,15 @@
 ---
 
 ## Non-Functional Requirements
-- **Portability**: All scripts are Bash-compatible on macOS and Linux. Python 3 scripts may be used for file modification/templating operations.
+- **Portability**: CLI is implemented in Python 3 and should run on macOS and Linux with a system `git`; supporting Git hook helpers remain Bash-compatible.
 - **Safety**: Automation never modifies tracked repository files besides the managed `AGENTS.md`; all other changes stay inside `.git`.
-- **Testability**: Bats coverage for enable/disable/status/make flows, idempotency, repository enforcement, and regeneration behaviour.
+- **Testability**: Pytest coverage for enable/disable/status/make flows, idempotency, repository enforcement, and regeneration behaviour.
 - **Resilience**: Setup tolerates repeated runs and restores user state during disable, even when names collide with existing hooks or aliases.
 
 ---
 
 ## Deliverables
-1. CLI command implementations under `lib/agentsmd/commands/` (`enable.sh`, `disable.sh`, `status.sh`, `make.sh`) wired through `bin/agentsmd`.
+1. CLI command implementations under `agentsmd/` (Python modules for `enable`, `disable`, `status`, `make`) wired through `bin/agentsmd`.
 2. Git asset scripts and templates under `share/agentsmd/git/`.
-3. Automated tests (`tests/specs/*.bats`) covering product requirements.
+3. Automated tests (`tests/*.py`) covering product requirements via pytest.
 4. README highlights the core value proposition and stays in sync with the supported command surface.

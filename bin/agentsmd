@@ -1,24 +1,27 @@
-#!/usr/bin/env bash
-set -euo pipefail
-IFS=$'\n\t'
+#!/usr/bin/env python3
+"""agentsmd CLI entrypoint."""
 
-resolve_path() {
-  local target="$1"
-  if command -v realpath > /dev/null 2>&1; then
-    realpath "$target"
-  else
-    python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$target" 2> /dev/null || perl -MCwd -e 'print Cwd::abs_path($ARGV[0])' "$target"
-  fi
-}
+from __future__ import annotations
 
-script_path=$(resolve_path "${BASH_SOURCE[0]}")
-BIN_DIR=$(cd "$(dirname "$script_path")" && pwd)
-PROJECT_ROOT=$(resolve_path "$BIN_DIR/..")
-export AGENTSMD_ROOT="$PROJECT_ROOT"
-export AGENTSMD_LIB_DIR="$AGENTSMD_ROOT/lib/agentsmd"
-export AGENTSMD_SHARE_DIR="$AGENTSMD_ROOT/share/agentsmd"
+import os
+import sys
+from pathlib import Path
 
-# shellcheck source=lib/agentsmd/core.sh
-. "$AGENTSMD_LIB_DIR/core.sh"
 
-agentsmd_main "$@"
+def _prepare_path() -> None:
+    root = Path(__file__).resolve().parents[1]
+    os.environ.setdefault("AGENTSMD_ROOT", str(root))
+    share_dir = root / "share" / "agentsmd"
+    os.environ.setdefault("AGENTSMD_SHARE_DIR", str(share_dir))
+    sys.path.insert(0, str(root))
+
+
+def main() -> int:
+    _prepare_path()
+    from agentsmd.cli import main as cli_main
+
+    return cli_main()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
