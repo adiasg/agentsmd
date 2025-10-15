@@ -8,6 +8,11 @@ def test_status_reports_disabled_by_default(repo: Repo) -> None:
 
     assert result.returncode == 0
     assert "Status: DISABLED" in result.stderr
+    assert "pre-commit hook missing or unmanaged" in result.stderr
+    assert "merge driver entry absent" in result.stderr
+    assert "git alias alias.rebuild-agents not configured" in result.stderr
+    assert "merge driver executable missing" in result.stderr
+    assert "AGENTS.md not tracked by Git; cannot verify assume-unchanged flag" in result.stderr
 
 
 def test_status_reports_enabled_after_install(repo: Repo) -> None:
@@ -33,3 +38,14 @@ def test_status_reports_disabled_after_disable(repo: Repo) -> None:
     status = repo.run("status")
     assert status.returncode == 0
     assert "Status: DISABLED" in status.stderr
+
+
+def test_status_flags_missing_assume_unchanged_for_tracked_file(repo: Repo) -> None:
+    repo.write("AGENTS.md", "Base instructions\n")
+    repo.git("add", "AGENTS.md")
+    repo.git("commit", "-m", "seed AGENTS")
+
+    status = repo.run("status")
+
+    assert status.returncode == 0
+    assert "AGENTS.md is tracked but not marked assume-unchanged" in status.stderr

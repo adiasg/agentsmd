@@ -103,9 +103,6 @@ def test_enable_disable_restores_user_state(repo: Repo) -> None:
     # We use the hash of the semantic Git config because the .git/config file does not retain the same ordering after disable.
     config_before = git_config_semantic_hash(repo)
 
-    repo.run("enable")
-    repo.run("disable")
-
     src_after = working_tree_hash(repo.path)
     config_after = git_config_semantic_hash(repo)
 
@@ -149,3 +146,15 @@ def test_enable_masks_agents_md_from_status(repo: Repo) -> None:
 
     status = repo.git("status", "--short", check=True)
     assert "AGENTS.md" not in status.stdout
+
+
+def test_enable_initial_render_regenerates_agents_md(repo: Repo) -> None:
+    repo.write("AGENTS.md", "Base instructions\n")
+    repo.git("add", "AGENTS.md")
+    repo.git("commit", "-m", "seed AGENTS base")
+    repo.write(".agentsmd", "Developer block\n")
+
+    result = repo.run("enable")
+
+    assert result.returncode == 0
+    assert repo.read("AGENTS.md") == "Base instructions\n\nDeveloper block\n"

@@ -66,6 +66,36 @@ def test_regeneration_uses_head_as_base(repo: Repo) -> None:
     assert repo.read("AGENTS.md") == expected
 
 
+def test_make_regenerates_after_branch_switch(repo: Repo) -> None:
+    repo.write(".agentsmd", "Developer block\n")
+    repo.git("checkout", "-b", "branch_a")
+    branch_a_base = "Branch A base\n"
+    repo.write("AGENTS.md", branch_a_base)
+    repo.git("add", "AGENTS.md")
+    repo.git("commit", "-m", "seed branch_a base")
+
+    result_branch_a = repo.run("make")
+    assert result_branch_a.returncode == 0
+    assert repo.read("AGENTS.md") == branch_a_base.rstrip("\n") + "\n\nDeveloper block\n"
+    repo.git("checkout", "--", "AGENTS.md")
+
+    repo.git("checkout", "-b", "branch_b")
+    branch_b_base = "Branch B base\n"
+    repo.write("AGENTS.md", branch_b_base)
+    repo.git("add", "AGENTS.md")
+    repo.git("commit", "-m", "update branch_b base")
+
+    result_branch_b = repo.run("make")
+    assert result_branch_b.returncode == 0
+    assert repo.read("AGENTS.md") == branch_b_base.rstrip("\n") + "\n\nDeveloper block\n"
+    repo.git("checkout", "--", "AGENTS.md")
+
+    repo.git("checkout", "branch_a")
+    result_back = repo.run("make")
+    assert result_back.returncode == 0
+    assert repo.read("AGENTS.md") == branch_a_base.rstrip("\n") + "\n\nDeveloper block\n"
+
+
 def test_missing_preferences_skip_append(repo: Repo) -> None:
     base = "Base instructions\n"
     repo.write("AGENTS.md", base)
@@ -74,6 +104,7 @@ def test_missing_preferences_skip_append(repo: Repo) -> None:
 
     assert result.returncode == 0
     assert repo.read("AGENTS.md") == base
+    assert "NOTICE: .agentsmd not found; skipping local preferences block." in result.stderr
 
 
 def test_empty_preferences_skip_append(repo: Repo) -> None:
@@ -85,6 +116,7 @@ def test_empty_preferences_skip_append(repo: Repo) -> None:
 
     assert result.returncode == 0
     assert repo.read("AGENTS.md") == base
+    assert "NOTICE: .agentsmd is empty; skipping local preferences block." in result.stderr
 
 
 def test_template_render_in_preferences(repo: Repo) -> None:
@@ -195,6 +227,19 @@ def test_template_without_prefix_or_suffix_normalizes_newlines(
     assert repo.read("AGENTS.md") == "Solo-render template\n"
 
 
+def test_template_prefers_extensionless_file(repo: Repo) -> None:
+    templates_dir = Path(os.environ["HOME"]) / ".agentsmd" / "templates"
+    templates_dir.mkdir(parents=True, exist_ok=True)
+    (templates_dir / "nextjs").write_text("Extensionless template\n", encoding="utf-8")
+    (templates_dir / "nextjs.md").write_text("Markdown template\n", encoding="utf-8")
+    repo.write("AGENTS.md", "{{ nextjs }}\n")
+
+    result = repo.run("make")
+
+    assert result.returncode == 0
+    assert repo.read("AGENTS.md") == "Extensionless template\n"
+
+
 def test_missing_template_generates_warning(repo: Repo) -> None:
     repo.write(".agentsmd", "Before\n\n{{ missing }}\n")
 
@@ -231,3 +276,16 @@ def test_appended_content_single_trailing_newline(repo: Repo, prefs_content: str
 
     assert result.returncode == 0
     assert repo.read("AGENTS.md") == "Base instructions\n\nAppended prefs\n"
+
+
+def test_make_fails_on_read_only_destination(repo: Repo) -> None:
+    repo.write("AGENTS.md", "Base instructions\n")
+    repo.git("add", "AGENTS.md")
+    repo.git("commit", "-m", "seed AGENTS base")
+    repo.write(".agentsmd", "Developer block\n")
+
+    target = repo.path / "AGENTS.md"
+    target.chmod(0o444)
+
+    with pytest.raises(PermissionError):
+        repo.run("make")
